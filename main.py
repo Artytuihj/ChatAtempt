@@ -1,41 +1,25 @@
-from flask import Flask, render_template, request
-from flask_socketio import SocketIO, send
-import random, string
+import requests
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app)
+# URL of your Replit server
+SERVER_URL = "https://fb4af26b-2c13-4572-9233-7fe3e9997ba6-00-2h1z2uim9qyfu.kirk.replit.dev"
 
-clients = {}
-default_key = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+# Room info to register
+room_data = {
+    "room": "CoolRoom123",
+    "port": 9000
+}
 
-def xor_crypt(text, key):
-    return ''.join(chr(ord(c) ^ ord(key[i % len(key)])) for i, c in enumerate(text))
+try:
+    # Send POST request to /register
+    response = requests.post(f"{SERVER_URL}/register", json=room_data)
 
-@app.route('/')
-def index():
-    return render_template('index.html', key=default_key)
+    # Print response
+    if response.status_code == 200:
+        print("[✅] Registered successfully:")
+        print(response.json())
+    else:
+        print(f"[❌] Failed to register. Status code: {response.status_code}")
+        print(response.text)
 
-@socketio.on('join')
-def handle_join(data):
-    clients[request.sid] = data['name']
-    send(f"[sys] {data['name']} joined the chat.", broadcast=True)
-
-@socketio.on('message')
-def handle_message(data):
-    name = clients.get(request.sid, "Unknown")
-    decrypted = xor_crypt(data['msg'], data['key'])
-    print(f"[{name}] {decrypted}")
-    for sid in clients:
-        if sid != request.sid:
-            enc = xor_crypt(f"{name}: {decrypted}", data['key'])
-            socketio.emit("message", enc, to=sid)
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    name = clients.get(request.sid, "Unknown")
-    send(f"[sys] {name} left the chat.", broadcast=True)
-    clients.pop(request.sid, None)
-
-if __name__ == '__main__':
-    socketio.run(app, host="0.0.0.0", port=5000)
+except Exception as e:
+    print("[💥] Error sending request:", e)
