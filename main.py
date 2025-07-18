@@ -14,15 +14,19 @@ hosting = False
 host_ip = ""
 host_port = 0
 
-
 def get_ip(code):
     url = f"{SERVER}/get?room_code={code}"
     response = requests.get(url)
     print(response.status_code)
     print(response.json())
-def setup_host(hostname):
-    host_ip,host_port = host.setup_host(SERVER,hostname)
 
+def connect(code):
+    get_ip(code)
+
+
+def setup_host(hostname):
+    host_ip,host_port,code = host.setup_host(SERVER,hostname)
+    connect(code)
 
 #region -----Buttons
 def on_send():
