@@ -1,25 +1,42 @@
 import requests
+import sys
+import UI
+from UI import SaladCord
+import host
 
 # URL of your Replit server
-SERVER_URL = "https://fb4af26b-2c13-4572-9233-7fe3e9997ba6-00-2h1z2uim9qyfu.kirk.replit.dev"
+SERVER = "https://ippointer.onrender.com"
+app,window = UI.ui_start()
 
-# Room info to register
-room_data = {
-    "room": "CoolRoom123",
-    "port": 9000
-}
 
-try:
-    # Send POST request to /register
-    response = requests.post(f"{SERVER_URL}/register", json=room_data)
 
-    # Print response
-    if response.status_code == 200:
-        print("[✅] Registered successfully:")
-        print(response.json())
+
+def get_ip(code):
+    url = f"{SERVER}/get?room_code={code}"
+    response = requests.get(url)
+    print(response.status_code)
+    print(response.json())
+
+def on_send():
+    text = window.prompt.toPlainText()
+    window.send_message("You", text,6)
+
+button_actions = {
+        "send": on_send
+    }
+def proces_button(msg_id: str):
+    print("1")
+    action = button_actions.get(msg_id)
+    if action:
+        action()
+
     else:
-        print(f"[❌] Failed to register. Status code: {response.status_code}")
-        print(response.text)
+        print("No action is bound to this id or id dosent exist")
 
-except Exception as e:
-    print("[💥] Error sending request:", e)
+
+
+
+
+
+window.buttonEvent.connect(proces_button)
+sys.exit(app.exec())

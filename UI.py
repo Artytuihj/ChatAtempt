@@ -1,90 +1,23 @@
 import sys
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
-    QTextEdit, QLineEdit, QPushButton, QLabel, QFrame, QListWidget, QGraphicsOpacityEffect, QSizePolicy, QScrollArea
+    QTextEdit, QLineEdit, QPushButton, QLabel, QFrame, QListWidget, QGraphicsOpacityEffect, QSizePolicy, QScrollArea, QMenu
 )
-from PyQt6.QtCore import Qt, QSize, QEvent, QTimer, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup
-from PyQt6.QtGui import QFont
-
-def three_dots():
-    from PyQt6.QtWidgets import QMenu
-    from PyQt6.QtGui import QCursor
-    menu = QMenu()
-    menu.setStyleSheet("""
-           QMenu {
-               background-color: #1a1a1a;
-               color: white;
-               border: 2px solid #292929;
-               border-radius: 6px;
-           }
-           QMenu::item:selected {
-               background-color: #2abf5e;
-               border-radius: 3px;
-               color: black;
-           }
-       """)
-    menu.addAction("Reply")
-    menu.addAction("Delete")
-    menu.exec(QCursor.pos())
-
-def create_message_widget(nickname: str, message: str, msg_id: int) -> QWidget:
-    msg_widget = QWidget()
-    msg_widget.setStyleSheet("""
-        QWidget {
-            background-color: transparent;
-            border-radius: 6px;
-        }
-        QWidget:hover {
-            background-color: #292929;
-        }
-    """)
-
-    layout = QVBoxLayout(msg_widget)
-    layout.setContentsMargins(10, 5, 10, 5)
-    layout.setSpacing(2)
-
-    top_row = QHBoxLayout()
-    top_row.setContentsMargins(0, 0, 0, 0)
-
-    nickname_label = QLabel(f"{nickname}:")
-    nickname_label.setStyleSheet("color: white; font-weight: bold;")
-    top_row.addWidget(nickname_label)
-    top_row.addStretch()
-
-    three_dots_button = QPushButton(str(msg_id))
-    three_dots_button.setFixedSize(20, 20)
-    three_dots_button.setStyleSheet("""
-        QPushButton {
-            background-color: transparent;
-            color: #2abf5e;
-            border: none;
-            font-size: 14px;
-        }
-        QPushButton:hover {
-            color: #ffffff;
-        }
-    """)
-    three_dots_button.setProperty("id",msg_id)
-    three_dots_button.clicked.connect(three_dots)
-    top_row.addWidget(three_dots_button)
-
-    message_label = QLabel(message)
-    message_label.setStyleSheet("color: white;")
-    message_label.setWordWrap(True)
-
-    layout.addLayout(top_row)
-    layout.addWidget(message_label)
-
-    return msg_widget
+from PyQt6.QtCore import Qt, QSize, QEvent, QTimer, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup, \
+    pyqtSignal, QObject
+from PyQt6.QtGui import QFont, QCursor
 
 
-class SaladCord(QWidget):
+
+class SaladCord(QWidget,QObject):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Salad 🍃")
         self.resize(900, 600)
         self.setStyleSheet("background-color: #1A1A1A;")
         self.init_ui()
+
+    buttonEvent = pyqtSignal(str)
 
     def init_ui(self):
         main_layout = QHBoxLayout(self)
@@ -156,7 +89,7 @@ class SaladCord(QWidget):
         """)
         sendB.setFixedWidth(70)
         sendB.setFixedHeight(32)
-        sendB.clicked.connect(self.send_message)
+        sendB.clicked.connect(lambda : self.buttonEvent.emit("send"))
         prompt_layout.addWidget(sendB)
 
         # ------- Chat Layout -------
@@ -173,18 +106,78 @@ class SaladCord(QWidget):
 
         main_layout.addWidget(chat_container)
 
-    def send_message(self):
-        text = self.prompt.toPlainText().strip()
-        if text:
-            msgAmount = self.chat_feed_layout.count()
-            msg_widget = create_message_widget("You", text,msgAmount+1)
+    def three_dots(self):
+        menu = QMenu()
+        menu.setStyleSheet("""
+               QMenu {
+                   background-color: #1a1a1a;
+                   color: white;
+                   border: 2px solid #292929;
+                   border-radius: 6px;
+               }
+               QMenu::item:selected {
+                   background-color: #2abf5e;
+                   border-radius: 6px;
+                   color: black;
+               }
+           """)
+        menu.addAction("Reply")
+        menu.addAction("Delete")
+        menu.exec(QCursor.pos())
+    def send_message(self,nickname,text,msg_id):
+
+            msg_widget = QWidget()
+            msg_widget.setStyleSheet("""
+                    QWidget {
+                        background-color: transparent;
+                        border-radius: 6px;
+                    }
+                    QWidget:hover {
+                        background-color: #292929;
+                    }
+                """)
+
+            layout = QVBoxLayout(msg_widget)
+            layout.setContentsMargins(10, 5, 10, 5)
+            layout.setSpacing(2)
+
+            top_row = QHBoxLayout()
+            top_row.setContentsMargins(0, 0, 0, 0)
+
+            nickname_label = QLabel(f"{nickname}:")
+            nickname_label.setStyleSheet("color: white; font-weight: bold;")
+            top_row.addWidget(nickname_label)
+            top_row.addStretch()
+
+            three_dots_button = QPushButton("...")
+            three_dots_button.setFixedSize(20, 20)
+            three_dots_button.setStyleSheet("""
+                    QPushButton {
+                        background-color: transparent;
+                        color: #2abf5e;
+                        border: none;
+                        font-size: 14px;
+                    }
+                    QPushButton:hover {
+                        color: #ffffff;
+                    }
+                """)
+            three_dots_button.setProperty("msg_id", msg_id)
+            three_dots_button.clicked.connect(self.three_dots)
+            top_row.addWidget(three_dots_button)
+
+            message_label = QLabel(text)
+            message_label.setStyleSheet("color: white;")
+            message_label.setWordWrap(True)
+
+            layout.addLayout(top_row)
+            layout.addWidget(message_label)
             self.chat_feed_layout.addWidget(msg_widget)
             self.prompt.clear()
-            # Auto-scroll to bottom
             self.scroll_area.verticalScrollBar().setValue(self.scroll_area.verticalScrollBar().maximum())
 
 
-def main():
+def ui_start():
     app = QApplication(sys.argv)
 
     scrollbar_style = """
@@ -242,8 +235,9 @@ def main():
 
     window = SaladCord()
     window.show()
-    sys.exit(app.exec())
+    window.send_message("[SYSTEM]", "test test test", "0")
+    return app,window
 
 
-if __name__ == "__main__":
-    main()
+
+
