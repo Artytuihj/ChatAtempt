@@ -1,4 +1,5 @@
 import requests
+import socket
 import sys
 import UI
 from UI import SaladCord
@@ -8,7 +9,10 @@ import host
 SERVER = "https://ippointer.onrender.com"
 app,window = UI.ui_start()
 
-
+connected = False
+hosting = False
+host_ip = ""
+host_port = 0
 
 
 def get_ip(code):
@@ -16,10 +20,15 @@ def get_ip(code):
     response = requests.get(url)
     print(response.status_code)
     print(response.json())
+def setup_host(hostname):
+    host_ip,host_port = host.setup_host(SERVER,hostname)
 
+
+#region -----Buttons
 def on_send():
-    text = window.prompt.toPlainText()
-    window.send_message("You", text,6)
+    if connected:
+        text = window.prompt.toPlainText()
+        window.send_message("You", text,6)
 
 button_actions = {
         "send": on_send
@@ -32,7 +41,7 @@ def proces_button(msg_id: str):
 
     else:
         print("No action is bound to this id or id dosent exist")
-
+#endregion
 
 
 
