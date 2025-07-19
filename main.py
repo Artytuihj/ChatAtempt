@@ -60,7 +60,8 @@ def connect(code):
             connected = True
 
 def setup_host(hostname):
-    global VERSION,host_port,host_ip
+    global VERSION,host_port,host_ip,hosting
+    hosting = True
     host_ip,host_port,code = host.setup_host(SERVER,hostname,VERSION)
     connect(code)
 
