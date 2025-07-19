@@ -8,11 +8,10 @@ from PyQt6.QtCore import Qt, QSize, QEvent, QTimer, QPropertyAnimation, QEasingC
 from PyQt6.QtGui import QFont, QCursor
 
 
-
 class SaladCord(QWidget,QObject):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Salad 🍃")
+        self.setWindowTitle("Ping 🍃")
         self.resize(900, 600)
         self.setStyleSheet("background-color: #1A1A1A;")
         self.init_ui()
