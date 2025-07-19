@@ -5,6 +5,7 @@ import UI
 from UI import SaladCord
 import host
 import json
+#region variables
 
 VERSION = "0.6.3"
 # URL of your Replit server
@@ -17,6 +18,7 @@ host_ip = ""
 host_port = 0
 
 username = "Vladik"
+#endregion
 
 def get_ip(code):
     try:
@@ -36,6 +38,7 @@ def get_ip(code):
 
     except requests.exceptions.RequestException as e:
         print(f"Request failed: {e}")
+
 def connect(code):
     global host_ip,host_port,username,VERSION,connected
     data = get_ip(code)
@@ -82,9 +85,6 @@ def proces_button(action_id: str):
     else:
         print("No action is bound to this id or id dosent exist")
 #endregion
-
-
-
 
 window.buttonEvent.connect(proces_button)
 setup_host("server")

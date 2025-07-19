@@ -6,14 +6,42 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QSize, QEvent, QTimer, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup, \
     pyqtSignal, QObject
 from PyQt6.QtGui import QFont, QCursor
+import re
+#region Colors
+black = "#121212"
+spotify_green = "#2abf5e"
+primary_green = "#7CB342"
+primary_green_hover = "#689F38"
+primary_green_dark = "#598f32"
+accent_green = "#8BC34A"
+light_green = "#DCEDC8"
 
+light_grey = "#3d3d3d"
+bg_primary = "#36393F"
+bg_secondary = "#2F3136"
+bg_tertiary = "#202225"
+bg_quaternary = "#292B2F"
 
-class SaladCord(QWidget,QObject):
+text_primary = "#DCDDDE"
+text_secondary = "#B9BBBE"
+text_muted = "#72767D"
+text_link = "#7CB342"
+
+interactive_normal = "#B9BBBE"
+interactive_hover = "#DCDDDE"
+interactive_active = "#FFFFFF"
+
+status_idle = "#FAA61A"
+status_dnd = "#F04747"
+status_invisible = "#747F8D"
+#endregion
+
+class SaladCord(QWidget, QObject):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Ping 🍃")
         self.resize(900, 600)
-        self.setStyleSheet("background-color: #1A1A1A;")
+        self.setStyleSheet(f"background-color: {black};")  # #1A1A1A approx black replaced by black variable
         self.init_ui()
 
     buttonEvent = pyqtSignal(str)
@@ -43,24 +71,24 @@ class SaladCord(QWidget,QObject):
         prompt_layout.setSpacing(5)
 
         self.prompt = QTextEdit()
-        self.prompt.setStyleSheet("""
-            QTextEdit {
-                border: 2px solid #292929;
+        self.prompt.setStyleSheet(f"""
+            QTextEdit {{
+                border: 2px solid {bg_quaternary};
                 border-radius: 9px;
                 background-color: #262626;
                 font-size: 12px;
-                color: white; 
-            }
-            QTextEdit:hover {
+                color: {interactive_active};
+            }}
+            QTextEdit:hover {{
                 background-color: #272727;
-            }
-            QTextEdit:focus {
-                border-color: #2abf5e;
-            }
-            QTextEdit::placeholder {
-                color: #3d3d3d;
+            }}
+            QTextEdit:focus {{
+                border-color: {primary_green};
+            }}
+            QTextEdit::placeholder {{
+                color: {light_grey};
                 font-weight: bold;
-            }
+            }}
         """)
         self.prompt.setFixedHeight(30)
         self.prompt.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -70,21 +98,21 @@ class SaladCord(QWidget,QObject):
         prompt_layout.addWidget(self.prompt)
 
         sendB = QPushButton("Send")
-        sendB.setStyleSheet("""
-            QPushButton {
-                background-color: #2abf5e;
+        sendB.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {primary_green};  /* swapped spotify green #2abf5e -> primary_green */
                 border-radius: 9px;
                 font-size: 12px;
                 font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #239c4d;
-            }
-            QPushButton:pressed {
-                background-color: #197036;
+            }}
+            QPushButton:hover {{
+                background-color: {primary_green_hover};
+            }}
+            QPushButton:pressed {{
+                background-color: {primary_green_dark};
                 padding-top: 2px;
                 padding-left: 1px;
-            }
+            }}
         """)
         sendB.setFixedWidth(70)
         sendB.setFixedHeight(32)
@@ -94,10 +122,10 @@ class SaladCord(QWidget,QObject):
         # ------- Chat Layout -------
         chat_container = QWidget()
         chat_container.setObjectName("chat_container")
-        chat_container.setStyleSheet("""QWidget#chat_container {
-                                    background-color: #1A1A1A;
-                                    border: 2px solid #292929;
-                                    border-radius: 9px;}""")
+        chat_container.setStyleSheet(f"""QWidget#chat_container {{
+                                    background-color: {black};
+                                    border: 2px solid {bg_quaternary};
+                                    border-radius: 9px;}}""")
         chat_layout = QVBoxLayout(chat_container)
         chat_layout.setContentsMargins(10, 10, 10, 10)
         chat_layout.addWidget(self.scroll_area)   # add scroll area, not container
@@ -107,74 +135,73 @@ class SaladCord(QWidget,QObject):
 
     def three_dots(self):
         menu = QMenu()
-        menu.setStyleSheet("""
-               QMenu {
-                   background-color: #1a1a1a;
-                   color: white;
-                   border: 2px solid #292929;
+        menu.setStyleSheet(f"""
+               QMenu {{
+                   background-color: {black};
+                   color: {interactive_active};
+                   border: 2px solid {bg_quaternary};
                    border-radius: 6px;
-               }
-               QMenu::item:selected {
-                   background-color: #2abf5e;
+               }}
+               QMenu::item:selected {{
+                   background-color: {primary_green};
                    border-radius: 6px;
                    color: black;
-               }
+               }}
            """)
         menu.addAction("Reply")
         menu.addAction("Delete")
         menu.exec(QCursor.pos())
-    def send_message(self,nickname,text,msg_id):
 
-            msg_widget = QWidget()
-            msg_widget.setStyleSheet("""
-                    QWidget {
-                        background-color: transparent;
-                        border-radius: 6px;
-                    }
-                    QWidget:hover {
-                        background-color: #292929;
-                    }
-                """)
+    def send_message(self, nickname, text, msg_id):
+        msg_widget = QWidget()
+        msg_widget.setStyleSheet(f"""
+                QWidget {{
+                    background-color: transparent;
+                    border-radius: 6px;
+                }}
+                QWidget:hover {{
+                    background-color: {bg_quaternary};
+                }}
+            """)
 
-            layout = QVBoxLayout(msg_widget)
-            layout.setContentsMargins(10, 5, 10, 5)
-            layout.setSpacing(2)
+        layout = QVBoxLayout(msg_widget)
+        layout.setContentsMargins(10, 5, 10, 5)
+        layout.setSpacing(2)
 
-            top_row = QHBoxLayout()
-            top_row.setContentsMargins(0, 0, 0, 0)
+        top_row = QHBoxLayout()
+        top_row.setContentsMargins(0, 0, 0, 0)
 
-            nickname_label = QLabel(f"{nickname}:")
-            nickname_label.setStyleSheet("color: white; font-weight: bold;")
-            top_row.addWidget(nickname_label)
-            top_row.addStretch()
+        nickname_label = QLabel(f"{nickname}:")
+        nickname_label.setStyleSheet(f"color: {interactive_active}; font-weight: bold;")
+        top_row.addWidget(nickname_label)
+        top_row.addStretch()
 
-            three_dots_button = QPushButton("...")
-            three_dots_button.setFixedSize(20, 20)
-            three_dots_button.setStyleSheet("""
-                    QPushButton {
-                        background-color: transparent;
-                        color: #2abf5e;
-                        border: none;
-                        font-size: 14px;
-                    }
-                    QPushButton:hover {
-                        color: #ffffff;
-                    }
-                """)
-            three_dots_button.setProperty("msg_id", msg_id)
-            three_dots_button.clicked.connect(self.three_dots)
-            top_row.addWidget(three_dots_button)
+        three_dots_button = QPushButton("...")
+        three_dots_button.setFixedSize(20, 20)
+        three_dots_button.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: transparent;
+                    color: {primary_green};  /* spotify green replaced */
+                    border: none;
+                    font-size: 14px;
+                }}
+                QPushButton:hover {{
+                    color: {interactive_active};
+                }}
+            """)
+        three_dots_button.setProperty("msg_id", msg_id)
+        three_dots_button.clicked.connect(self.three_dots)
+        top_row.addWidget(three_dots_button)
 
-            message_label = QLabel(text)
-            message_label.setStyleSheet("color: white;")
-            message_label.setWordWrap(True)
+        message_label = QLabel(text)
+        message_label.setStyleSheet(f"color: {interactive_active};")
+        message_label.setWordWrap(True)
 
-            layout.addLayout(top_row)
-            layout.addWidget(message_label)
-            self.chat_feed_layout.addWidget(msg_widget)
-            self.prompt.clear()
-            self.scroll_area.verticalScrollBar().setValue(self.scroll_area.verticalScrollBar().maximum())
-
+        layout.addLayout(top_row)
+        layout.addWidget(message_label)
+        self.chat_feed_layout.addWidget(msg_widget)
+        self.prompt.clear()
+        self.scroll_area.verticalScrollBar().setValue(self.scroll_area.verticalScrollBar().maximum())
 
 def ui_start():
     app = QApplication(sys.argv)

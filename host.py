@@ -4,7 +4,7 @@ import json
 import random
 import string
 import threading
-
+#region variables
 VERSION = "0.0.0"
 SERVER = ""
 hosting = False
@@ -12,6 +12,7 @@ hostname = ""
 s = None
 code = ""
 clients = {}
+#endregion
 
 def generate_scramble(length=5):
     scramble = ''.join(random.choice(string.ascii_uppercase) for _ in range(length))
