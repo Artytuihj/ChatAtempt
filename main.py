@@ -7,7 +7,7 @@ import host
 import json
 #region variables
 
-VERSION = "0.6.3"
+VERSION = "0.6.8"
 # URL of your Replit server
 SERVER = "https://ippointer.onrender.com"
 app,window = UI.ui_start()
