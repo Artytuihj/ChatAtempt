@@ -8,7 +8,7 @@ from host import HostHandler
 
 class mainApp():
     def __init__(self):
-        self.VERSION = "0.6.8"
+        self.VERSION = "0.6.9"
         self.SERVER = "https://ippointer.onrender.com"
         self.s = None
         self.app, self.window = UI.ui_start()
@@ -80,6 +80,8 @@ class mainApp():
                 msg = json.loads(data.decode())
 
                 if msg.get("mirormsg"):
+                    print("")
+                    #TODO: make a recive message thing
 
             except Exception as e:
                 print(f"Error receiving message: {e}")
