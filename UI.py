@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QSize, QEvent, QTimer, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup, \
     pyqtSignal, QObject
-from PyQt6.QtGui import QFont, QCursor
+from PyQt6.QtGui import QFont, QCursor, QPalette, QColor
 import re
 #region Colors
 black = "#121212"
@@ -37,6 +37,10 @@ status_invisible = "#747F8D"
 #endregion
 
 class SaladCord(QWidget, QObject):
+    buttonEvent = pyqtSignal(str)
+    msgEvent = pyqtSignal(str, str, int, bool)
+    hostEvent = pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Ping 🍃")
@@ -44,7 +48,7 @@ class SaladCord(QWidget, QObject):
         self.setStyleSheet(f"background-color: {black};")  # #1A1A1A approx black replaced by black variable
         self.init_ui()
 
-    buttonEvent = pyqtSignal(str)
+        self.msgEvent.connect(self.send_message)
 
     def init_ui(self):
         main_layout = QHBoxLayout(self)
@@ -131,6 +135,38 @@ class SaladCord(QWidget, QObject):
         chat_layout.addWidget(self.scroll_area)   # add scroll area, not container
         chat_layout.addWidget(prompt_container)
 
+        # -------- side bar --------
+        side_bar_container = QWidget()
+        side_bar_container.setStyleSheet(f"""QWidget {{
+                                                background-color: {bg_tertiary};
+                                                border-radius: 9px;}}""")
+        side_bar_layout = QVBoxLayout(side_bar_container)
+        side_bar_layout.setContentsMargins(5, 5, 5, 5)
+        side_bar_layout.setSpacing(5)
+
+        hostB = QPushButton("Host")
+        hostB.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: {primary_green};
+                        border-radius: 9px;
+                        font-size: 12px;
+                        font-weight: bold;
+                    }}
+                    QPushButton:hover {{
+                        background-color: {primary_green_hover};
+                    }}
+                    QPushButton:pressed {{
+                        background-color: {primary_green_dark};
+                        padding-top:  2px;
+                        padding-left: 2px;
+                    }}
+                """)
+        hostB.setFixedHeight(32)
+        hostB.setFixedWidth(32)
+        hostB.clicked.connect(lambda : self.buttonEvent.emit("send"))
+        side_bar_layout.addWidget(hostB, alignment=Qt.AlignmentFlag.AlignTop)
+
+        main_layout.addWidget(side_bar_container)
         main_layout.addWidget(chat_container)
 
     def three_dots(self):
@@ -152,7 +188,7 @@ class SaladCord(QWidget, QObject):
         menu.addAction("Delete")
         menu.exec(QCursor.pos())
 
-    def send_message(self, nickname, text, msg_id):
+    def send_message(self, nickname, text, msg_id,isDeliverd):
         msg_widget = QWidget()
         msg_widget.setStyleSheet(f"""
                 QWidget {{
@@ -163,6 +199,8 @@ class SaladCord(QWidget, QObject):
                     background-color: {bg_quaternary};
                 }}
             """)
+        msg_widget.setProperty("msg_id", msg_id)
+        msg_widget.setProperty("is_deliverd", isDeliverd)
 
         layout = QVBoxLayout(msg_widget)
         layout.setContentsMargins(10, 5, 10, 5)
@@ -181,22 +219,37 @@ class SaladCord(QWidget, QObject):
         three_dots_button.setStyleSheet(f"""
                 QPushButton {{
                     background-color: transparent;
-                    color: {primary_green};  /* spotify green replaced */
+                    color: {primary_green};
                     border: none;
                     font-size: 14px;
                 }}
                 QPushButton:hover {{
                     color: {interactive_active};
+                    
                 }}
             """)
-        three_dots_button.setProperty("msg_id", msg_id)
         three_dots_button.clicked.connect(self.three_dots)
         top_row.addWidget(three_dots_button)
+        deliverdMark = QLabel("✓")
+        deliverdMark.setStyleSheet(f"""
+            QLabel {{
+                background-color: transparent;
+                border: none;
+                font-size: 14px;
+            }}
 
+        """)
+        palette = deliverdMark.palette()  # get the current palette
+        palette.setColor(QPalette.ColorRole.WindowText, QColor(interactive_normal))
+        deliverdMark.setPalette(palette)
+        if isDeliverd:
+            palette.setColor(QPalette.ColorRole.WindowText, QColor(interactive_hover))
+            deliverdMark.setPalette(palette)
         message_label = QLabel(text)
         message_label.setStyleSheet(f"color: {interactive_active};")
         message_label.setWordWrap(True)
-
+        top_row.addWidget(deliverdMark)
+        #TODO: FIX THIS SHIT
         layout.addLayout(top_row)
         layout.addWidget(message_label)
         self.chat_feed_layout.addWidget(msg_widget)
@@ -261,7 +314,7 @@ def ui_start():
 
     window = SaladCord()
     window.show()
-    window.send_message("[SYSTEM]", "test test test", "0")
+    window.send_message("[SYSTEM]", "test test test", "0",False)
     return app,window
 
 

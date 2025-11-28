@@ -55,9 +55,9 @@ class HostHandler:
     # =========================
     # ---- Registration ----
     # =========================
-    def generate_scramble(self, length=5):
+    def generate_scramble(self, length=16):
         """Generate a random uppercase room code."""
-        scramble = ''.join(random.choice(string.ascii_uppercase) for _ in range(length))
+        scramble = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
         print(f"[generate_scramble] Generated room code: {scramble}")
         return scramble
 
@@ -116,7 +116,7 @@ class HostHandler:
                             "cont": msg.get("cont")
                         }))
                         if status != 0:
-                            client_sock.send("msgrecv".encode())
+                            client_sock.send(json.dumps({"type":"msgrecv", "msgid":45}).encode())
                         else:
                             print("[handle_client][Broadcast] Failed to mirror message")
                     else:

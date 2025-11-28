@@ -2,7 +2,7 @@
 import socket
 import threading
 import json
-import requests   # 🔥 Added back, required for get_ip()
+import requests 
 
 # Internal imports
 import UI
@@ -11,14 +11,14 @@ from host import HostHandler
 
 
 # ==== Main Application ====
-class MainApp:   # 🔥 Renamed from mainApp → MainApp (Python naming convention)
+class MainApp:
     def __init__(self):
         # ---- Basic Config ----
         self.VERSION = "0.7.0"
-        self.SERVER = "https://ippointer.onrender.com"
+        self.SERVER = "https://ip-pointer.onrender.com/"
 
         # ---- Networking ----
-        self.sock = None   # 🔥 renamed from self.s → self.sock
+        self.sock = None
         self.connected = False
         self.hosting = False
         self.host_ip = ""
@@ -35,6 +35,7 @@ class MainApp:   # 🔥 Renamed from mainApp → MainApp (Python naming conventi
         # ---- Button actions ----
         self.button_actions = {
             "send": self.send_message
+            
         }
 
     # =========================
@@ -70,7 +71,7 @@ class MainApp:   # 🔥 Renamed from mainApp → MainApp (Python naming conventi
                 return
 
             if self.hosting and code == self.host.code:
-                host_ip = "127.0.0.1"   # Self-hosting shortcut
+                host_ip = "127.0.0.1"
 
             handshake = {
                 "type": "handshake",
@@ -94,26 +95,29 @@ class MainApp:   # 🔥 Renamed from mainApp → MainApp (Python naming conventi
 
     def listen_server_loop(self):
         """Background loop for receiving server messages."""
-        print("Listening to server...")
+        print("[listen_server_loop] Listening to server...")
         while self.connected:
+            print("200")
             try:
                 data = self.sock.recv(1024)
                 if not data:
                     break
-
+                print("[listen_server_loop] code: recv1 message received decoding")
                 try:
+                    print(data.decode())
                     msg = json.loads(data.decode())
                 except json.JSONDecodeError:
-                    print(f"Invalid JSON from server: {data}")
+                    print(f"[listen_server_loop] Invalid JSON from server: {data}")
                     continue
 
-                if msg.get("type") == "mirormsg":
-                    print(msg.get("cont"))
-                    # self.window.send_message(self.username, msg.get("cont"), 3)
-                    print("recv")
+                if msg.get('type') == "mirormsg":
+                    self.window.msgEvent.emit(self.username, msg.get("cont"), 3,False)
+                    print(f"[listen_server_loop] code: recv2 message received with contents: {msg.get("cont")}")
+                else:
+                    print(f"[listen_server_loop] code: recv2 message received with contents: {msg}")
 
             except Exception as e:
-                print(f"Error receiving message: {e}")
+                print(f"[listen_server_loop] Error receiving message: {e}")
                 break
 
     # =========================
@@ -132,6 +136,7 @@ class MainApp:   # 🔥 Renamed from mainApp → MainApp (Python naming conventi
         """Send a chat message to server/host."""
         if self.connected:
             text = self.window.prompt.toPlainText()
+            if text == "": return
             msg = {
                 "type": "msgtxt",
                 "cont": text
