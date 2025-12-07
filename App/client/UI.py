@@ -40,7 +40,7 @@ status_invisible = "#747F8D"
 #endregion
 
 class SaladCord(QWidget, QObject):
-    buttonEvent = pyqtSignal(str)
+    buttonEvent = pyqtSignal(str, str)
     msgEvent = pyqtSignal(str, str, int, bool)
     regWindowEvent = pyqtSignal()
 
@@ -126,7 +126,7 @@ class SaladCord(QWidget, QObject):
         """)
         self.sendB.setFixedWidth(70)
         self.sendB.setFixedHeight(32)
-        self.sendB.clicked.connect(lambda : self.buttonEvent.emit("send"))
+        self.sendB.clicked.connect(lambda : self.buttonEvent.emit("send",self.prompt.toPlainText()))
         self.prompt_layout.addWidget(self.sendB)
 
         # ------- Chat Layout -------
@@ -170,7 +170,7 @@ class SaladCord(QWidget, QObject):
                 """)
         self.hostB.setFixedHeight(32)
         self.hostB.setFixedWidth(32)
-        self.hostB.clicked.connect(lambda : self.buttonEvent.emit("host"))
+        self.hostB.clicked.connect(lambda : self.buttonEvent.emit("host","Server"))
         self.side_bar_layout.addWidget(self.hostB, alignment=Qt.AlignmentFlag.AlignTop)
 
         # -------- Host button --------
@@ -193,7 +193,7 @@ class SaladCord(QWidget, QObject):
                         """)
         self.connB.setFixedHeight(32)
         self.connB.setFixedWidth(32)
-        self.connB.clicked.connect(lambda: self.buttonEvent.emit("connReq"))
+        self.connB.clicked.connect(lambda: self.buttonEvent.emit("connReq",""))
         self.side_bar_layout.addWidget(self.connB, alignment=Qt.AlignmentFlag.AlignTop)
 
         self.main_layout.addWidget(self.side_bar_container)
@@ -373,7 +373,7 @@ class SaladCord(QWidget, QObject):
                 }}
             """)
             connB.setFixedSize(90, 20)  # sets width and height at once
-            connB.clicked.connect(lambda: self.buttonEvent.emit("conn"))
+            connB.clicked.connect(lambda: self.buttonEvent.emit("conn",self.codePrompt.toPlainText()))
 
             # set alignment here
             layout.addWidget(connB, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)

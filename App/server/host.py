@@ -5,14 +5,14 @@ import json
 import random
 import string
 import threading
+from App.Net.general.RegServerTransporter import  RegServerTransporter as RegServer
 
 
 # ==== Host Handler ====
 class HostHandler:
-    def __init__(self, server_url, version):
+    def __init__(self, version):
         # ---- Basic Config ----
         self.VERSION = version
-        self.SERVER = server_url
         self.hostname = "Undefined"
         self.hosting = False
         self.code = ""
@@ -35,7 +35,7 @@ class HostHandler:
         print("[setup_host] Socket now listening...")
 
         self.code = self.generate_scramble()
-        self.register(port)
+        RegServer.register(port)
 
         self.hostname = hostname
         self.hosting = True
@@ -59,30 +59,7 @@ class HostHandler:
         scramble = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
         print(f"[generate_scramble] Generated room code: {scramble}")
         return scramble
-    def register(self, port):
-        """Register room code and port with central server."""
-        data_to_send = {
-            "room_code": self.code,
-            "port": port
-        }
 
-        print(f"[register] Sending registration to {self.SERVER}/reg with: {data_to_send}")
-        try:
-            response = requests.post(f"{self.SERVER}/reg", json=data_to_send)
-            print(f"[register] POST {self.SERVER}/reg → Status: {response.status_code}")
-
-            if response.ok:
-                try:
-                    print(f"[register] JSON Response: {response.json()}")
-                except json.JSONDecodeError:   # 🔥 fixed (used wrong exception before)
-                    print("[register] Server responded but did not return JSON.")
-                    print("Raw response:", response.text)
-            else:
-                print(f"[register] Server returned error {response.status_code}.")
-                print("Error content:", response.text)
-
-        except requests.exceptions.RequestException as e:
-            print(f"[register] Request failed: {e}")
 
     # =========================
     # ---- Client Handling ----
@@ -128,6 +105,7 @@ class HostHandler:
             if client_addr in self.clients:
                 del self.clients[client_addr]
             print(f"[handle_client] Thread for {client_addr} exiting")
+
     def broadcast(self, msg):
         """Send message to all connected clients."""
         print("[broadcast] Attempting...")
@@ -139,6 +117,7 @@ class HostHandler:
             except Exception as e:
                 print(f"[broadcast] Error sending to {addr} ({data.get('name')}): {e}")
                 return 0
+
     def handle_clients_connection(self):
         """Main server loop: accept clients and perform handshake."""
         print("[handle_clients] Hosting loop started.")
