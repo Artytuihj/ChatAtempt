@@ -46,7 +46,8 @@ class ClientNetHandler:
             try:
                 msg = self.msgQueue.get(timeout=0.1)
 
-                print(f"[Dispatcher] code: recv2 message received with contents: {msg.get("cont")}")
+                print(f"[Dispatcher] code: recv2 message received with contents: {msg.get('cont')}")
+
 
                 action = self.handlerMap.get(msg["type"])
                 if action:
@@ -61,7 +62,7 @@ class ClientNetHandler:
                     action(*argsList)
                 else:
                     print(f"[Dispatcher] code: recv2 message received but no action attached: {msg}")
-            except self.msgQueue.empty():
+            except queue.Empty:
                 pass
 
     def connect(self, code = None):
@@ -96,7 +97,9 @@ class ClientNetHandler:
                 response = self.sock.recv(1024).decode()
                 print("Server response:", response)
 
-                thread = threading.Thread(target=self.listen_server_loop, daemon=True)
+                thread = threading.Thread(target=self.ReceiveLoop(), daemon=True)
+                thread.start()
+                thread = threading.Thread(target=self.Dispatch(), daemon=True)
                 thread.start()
                 self.connected = True
             except Exception as e:

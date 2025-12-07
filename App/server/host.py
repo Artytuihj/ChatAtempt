@@ -35,7 +35,7 @@ class HostHandler:
         print("[setup_host] Socket now listening...")
 
         self.code = self.generate_scramble()
-        RegServer.register(port)
+        RegServer().register(port, self.code)
 
         self.hostname = hostname
         self.hosting = True
@@ -59,7 +59,6 @@ class HostHandler:
         scramble = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
         print(f"[generate_scramble] Generated room code: {scramble}")
         return scramble
-
 
     # =========================
     # ---- Client Handling ----

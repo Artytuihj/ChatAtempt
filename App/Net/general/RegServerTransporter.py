@@ -23,10 +23,10 @@ class RegServerTransporter:
         except requests.exceptions.RequestException as e:
             print(f"Request failed: {e}")
 
-    def register(self, port):
+    def register(self, port, code):
         """Register room code and port with central server."""
         data_to_send = {
-            "room_code": self.code,
+            "room_code": code,
             "port": port
         }
 
