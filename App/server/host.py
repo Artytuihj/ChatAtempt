@@ -108,14 +108,15 @@ class HostHandler:
     def broadcast(self, msg):
         """Send message to all connected clients."""
         print("[broadcast] Attempting...")
+        success = 0
         for addr, data in list(self.clients.items()):
             try:
                 data["sock"].send(msg.encode())
                 print(f"[broadcast] Sent to {addr} ({data['name']})")
-                return 1
+                success = 1
             except Exception as e:
                 print(f"[broadcast] Error sending to {addr} ({data.get('name')}): {e}")
-                return 0
+        return success
 
     def handle_clients_connection(self):
         """Main server loop: accept clients and perform handshake."""

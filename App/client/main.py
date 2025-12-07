@@ -1,9 +1,6 @@
 # ==== Imports ====
 import json
 
-from win32com.server.policy import regSpec
-
-import App.Net.general.RegServerTransporter
 # Internal imports
 from App.client import UI
 from App.server.host import HostHandler
@@ -28,8 +25,9 @@ class MainApp:
         self.username = "Vladik"
         self.handlerMap = {
             "mirormsg": self.accseptMsg,  # {"type":"msgrecv", "msgid":45}
+            "msgrecv": lambda msgid: print(f"[Client Back Log] Message received, id {msgid}")
         }
-        self.net = clientNet(self.handlerMap)
+        self.net = clientNet(self.handlerMap, self.username, self.VERSION)
 
         # ---- Button actions ----
         self.button_actions = {
@@ -49,7 +47,8 @@ class MainApp:
     # =========================
     # ---- Networking: Hosting ----
     # =========================
-    def setup_host(self, hostname = "Server"):
+    def setup_host(self, value="Server"):
+        hostname = value if value else "Server"
         self.net.setup_host(hostname, self.host)
 
     # =========================
@@ -57,7 +56,7 @@ class MainApp:
     # =========================
     def send_message(self, text):
         """Send a chat message to server/host."""
-        if self.connected:
+        if self.net.connected:
             if text == "": return
             msg = {
                 "type": "msgtxt",
@@ -65,21 +64,24 @@ class MainApp:
             }
             json_data = json.dumps(msg).encode()
             try:
-                self.sock.send(json_data)
+                self.net.sock.send(json_data)
             except Exception as e:
                 print(f"Failed to send message: {e}")
         else:
             print("Not connected to any host!")
-    def process_button(self, action_id: str):
-        """Map button clicks to actions."""
-        action = self.button_actions.get(action_id)
-        if action:
-            action()
-        else:
-            print("No action is bound to this id or id doesn't exist")
+
+    def process_button(self, action_id: str, value: str = ""):
+        try:
+            action = self.button_actions.get(action_id)
+            if action:
+                action(value)
+            else:
+                print("No action is bound to this id or id doesn't exist")
+        except Exception as e:
+            print(e)
     def accseptMsg(self, *args):
         msg = args[0]
-        self.window.msgEvent.emit(self.username, msg.get("cont"), 3, False)
+        self.window.msgEvent.emit(self.username, msg, 3, False)
 
 
 # ==== Run App ====

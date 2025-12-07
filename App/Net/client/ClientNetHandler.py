@@ -4,106 +4,93 @@ import socket
 import threading
 from App.Net.general.RegServerTransporter import RegServerTransporter as regServer
 
-from sympy.codegen import While
-
-
 class ClientNetHandler:
 
-    def __init__(self, handlerMap):
+    def __init__(self, handlerMap, username, VERSION):
         self.connected = False
         self.sock = None
         self.hosting = False
         self.host_ip = ""
-        self.host_port = 00000
+        self.host_port = 0
         self.msgQueue = queue.Queue()
         self.handlerMap = handlerMap
-
-
+        self.username = username
+        self.VERSION = VERSION
 
     def ReceiveLoop(self):
-        """Background loop for receiving server messages."""
         print("[ReceiveLoop] Listening to server...")
         while self.connected:
             try:
                 data = self.sock.recv(1024)
                 if not data:
-                    print(f"[ReceiveLoop] ReceiveLoop terminated")
+                    print("[ReceiveLoop] Connection closed by server")
+                    self.connected = False
                     break
-                print("[ReceiveLoop] code: recv1 message received decoding")
                 try:
                     msg = json.loads(data.decode())
-                    self.msgQueue.put(msg)
                 except json.JSONDecodeError:
-                    print(f"[ReceiveLoop] Invalid JSON from server: {data}")
-                    continue
+                    print(f"[ReceiveLoop] Invalid JSON: {data}")
+                    continue  # skip this message
+                if not isinstance(msg, dict):
+                    print(f"[ReceiveLoop] Received not-a-dict message, wrapping: {msg}")
+                    msg = {"type": "raw", "cont": msg}  # wrap string messages safely
+                self.msgQueue.put(msg)
             except Exception as e:
                 print(f"[ReceiveLoop] Error receiving message: {e}")
-                print(f"[ReceiveLoop] ReceiveLoop terminated")
+                self.connected = False
                 break
 
-    def Dispatch(self, msg):
-        while True:
+    def Dispatch(self):
+        """Process messages from the queue."""
+        while self.connected:
             try:
                 msg = self.msgQueue.get(timeout=0.1)
 
-                print(f"[Dispatcher] code: recv2 message received with contents: {msg.get('cont')}")
-
-
                 action = self.handlerMap.get(msg["type"])
                 if action:
-
-                    print(f"[Dispatcher] popped queue starting dispatch")
-
-                    argsList = []
-                    for key, value in msg.items():
-                        if key != "type":
-                            argsList.append(value)
-
+                    argsList = [v for k, v in msg.items() if k != "type"]
                     action(*argsList)
                 else:
-                    print(f"[Dispatcher] code: recv2 message received but no action attached: {msg}")
+                    print(f"[Dispatcher] No handler for msg type: {msg.get('type')}")
             except queue.Empty:
-                pass
+                continue
 
-    def connect(self, code = None):
-        if self.connected: return
+    def connect(self, code=None):
+        if self.connected:
+            return
 
-        if code == None:
-            code = input("no code provided. Enter Code:")
+        if code is None:
+            code = input("Enter server code: ")
 
-        data = regServer.get_ip(code)
-        if data:
+        try:
+            data = regServer().get_ip(code)
+            if not data:
+                print("[connect] Failed to get IP from server")
+                return
+
             host_ip = data.get("ip")
             host_port = data.get("port")
-
             if not host_ip or not host_port:
-                print("Invalid server response (missing ip/port).")
+                print("[connect] Invalid server response (missing ip/port).")
                 return
 
             if self.hosting:
                 host_ip = "127.0.0.1"
 
-            handshake = {
-                "type": "handshake",
-                "name": self.username,
-                "version": self.VERSION
-            }
-            json_data = json.dumps(handshake).encode()
-
+            handshake = {"type": "handshake", "name": self.username, "version": self.VERSION}
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            try:
-                self.sock.connect((host_ip, host_port))
-                self.sock.send(json_data)
-                response = self.sock.recv(1024).decode()
-                print("Server response:", response)
+            self.sock.connect((host_ip, host_port))
+            self.sock.send(json.dumps(handshake).encode())
+            response = self.sock.recv(1024).decode()
+            print("Server response:", response)
 
-                thread = threading.Thread(target=self.ReceiveLoop(), daemon=True)
-                thread.start()
-                thread = threading.Thread(target=self.Dispatch(), daemon=True)
-                thread.start()
-                self.connected = True
-            except Exception as e:
-                print(f"Failed to connect: {e}")
+            # Start background threads
+            self.connected = True
+            threading.Thread(target=self.ReceiveLoop, daemon=True).start()
+            threading.Thread(target=self.Dispatch, daemon=True).start()
+
+        except Exception as e:
+            print(f"[connect] Failed: {e}")
 
     def setup_host(self, hostname, host):
         self.hosting = True
