@@ -18,14 +18,14 @@ class HostHandler:
         self.code = ""
 
         # ---- Networking ----
-        self.sock = None     # 🔥 renamed from self.s → self.sock
+        self.sock = None
         self.clients = {}    # { address: {"name": str, "sock": socket} }
 
     # =========================
     # ---- Setup & Teardown ----
     # =========================
     def setup_host(self, hostname):
-        """Initialize socket, register host, and start hosting loop."""
+
         print("[setup_host] Creating socket...")
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.bind(('0.0.0.0', 0))
@@ -43,7 +43,6 @@ class HostHandler:
 
         print(f"[setup_host] Hosting ready. IP: {ip}, Port: {port}, Code: {self.code}")
         return ip, port, self.code
-
     def close_host(self):
         """Stop hosting and close socket."""
         print("[close_host] Closing host...")
@@ -60,7 +59,6 @@ class HostHandler:
         scramble = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
         print(f"[generate_scramble] Generated room code: {scramble}")
         return scramble
-
     def register(self, port):
         """Register room code and port with central server."""
         data_to_send = {
@@ -130,7 +128,6 @@ class HostHandler:
             if client_addr in self.clients:
                 del self.clients[client_addr]
             print(f"[handle_client] Thread for {client_addr} exiting")
-
     def broadcast(self, msg):
         """Send message to all connected clients."""
         print("[broadcast] Attempting...")
@@ -142,7 +139,6 @@ class HostHandler:
             except Exception as e:
                 print(f"[broadcast] Error sending to {addr} ({data.get('name')}): {e}")
                 return 0
-
     def handle_clients_connection(self):
         """Main server loop: accept clients and perform handshake."""
         print("[handle_clients] Hosting loop started.")

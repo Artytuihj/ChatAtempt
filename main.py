@@ -2,7 +2,7 @@
 import socket
 import threading
 import json
-import requests 
+import requests
 
 # Internal imports
 import UI
@@ -34,8 +34,10 @@ class MainApp:
 
         # ---- Button actions ----
         self.button_actions = {
-            "send": self.send_message
-            
+            "send": self.send_message,
+            "host": self.setup_host,
+            "connReq": self.connectRequest,
+            "conn": self.connectRequest,
         }
 
     # =========================
@@ -59,8 +61,16 @@ class MainApp:
         except requests.exceptions.RequestException as e:
             print(f"Request failed: {e}")
 
-    def connect(self, code):
-        """Connect to a host using room code."""
+    def connectRequest(self):
+        if self.connected != True:
+            self.window.regWindowEvent.emit()
+
+    def connect(self, code = None):
+        if self.connected == True: return
+
+        if code == None:
+            code = self.window.codePrompt.toPlainText()
+
         data = self.get_ip(code)
         if data:
             host_ip = data.get("ip")
@@ -123,8 +133,7 @@ class MainApp:
     # =========================
     # ---- Networking: Hosting ----
     # =========================
-    def setup_host(self, hostname):
-        """Start hosting a server and auto-connect to it."""
+    def setup_host(self, hostname = "Server"):
         self.hosting = True
         self.host_ip, self.host_port, code = self.host.setup_host(hostname)
         self.connect(code)
@@ -148,7 +157,6 @@ class MainApp:
                 print(f"Failed to send message: {e}")
         else:
             print("Not connected to any host!")
-
     def process_button(self, action_id: str):
         """Map button clicks to actions."""
         action = self.button_actions.get(action_id)
@@ -161,5 +169,5 @@ class MainApp:
 # ==== Run App ====
 if __name__ == "__main__":
     app = MainApp()
-    app.setup_host("server")
+    #app.setup_host("server")
     app.app.exec()

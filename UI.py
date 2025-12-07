@@ -1,7 +1,10 @@
 import sys
+from idlelib.configdialog import font_sample_text
+
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
-    QTextEdit, QLineEdit, QPushButton, QLabel, QFrame, QListWidget, QGraphicsOpacityEffect, QSizePolicy, QScrollArea, QMenu
+    QTextEdit, QLineEdit, QPushButton, QLabel, QFrame, QListWidget, QGraphicsOpacityEffect, QSizePolicy, QScrollArea,
+    QMenu, QDialog
 )
 from PyQt6.QtCore import Qt, QSize, QEvent, QTimer, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup, \
     pyqtSignal, QObject
@@ -39,19 +42,20 @@ status_invisible = "#747F8D"
 class SaladCord(QWidget, QObject):
     buttonEvent = pyqtSignal(str)
     msgEvent = pyqtSignal(str, str, int, bool)
-    hostEvent = pyqtSignal()
+    regWindowEvent = pyqtSignal()
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Ping 🍃")
+        self.setWindowTitle("thing no no work")
         self.resize(900, 600)
-        self.setStyleSheet(f"background-color: {black};")  # #1A1A1A approx black replaced by black variable
+        self.setStyleSheet(f"background-color: {black};")
         self.init_ui()
 
         self.msgEvent.connect(self.send_message)
+        self.regWindowEvent.connect(self.regWindow)
 
     def init_ui(self):
-        main_layout = QHBoxLayout(self)
+        self.main_layout = QHBoxLayout(self)
 
         # ------- Chat Feed Container -------
         self.chat_feed_container = QWidget()
@@ -69,11 +73,12 @@ class SaladCord(QWidget, QObject):
 
 
         # ------- Input Field (Prompt) Container -------
-        prompt_container = QWidget()
-        prompt_layout = QHBoxLayout(prompt_container)
-        prompt_layout.setContentsMargins(2, 0, 0, 2)
-        prompt_layout.setSpacing(5)
+        self.prompt_container = QWidget()
+        self.prompt_layout = QHBoxLayout(self.prompt_container)
+        self.prompt_layout.setContentsMargins(2, 0, 0, 2)
+        self.prompt_layout.setSpacing(5)
 
+        # ------- msg prompt -------
         self.prompt = QTextEdit()
         self.prompt.setStyleSheet(f"""
             QTextEdit {{
@@ -99,10 +104,11 @@ class SaladCord(QWidget, QObject):
         self.prompt.setPlaceholderText("Type Your Message Here...")
         self.prompt.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self.prompt.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
-        prompt_layout.addWidget(self.prompt)
+        self.prompt_layout.addWidget(self.prompt)
 
-        sendB = QPushButton("Send")
-        sendB.setStyleSheet(f"""
+        # ------- send button -------
+        self.sendB = QPushButton("Send")
+        self.sendB.setStyleSheet(f"""
             QPushButton {{
                 background-color: {primary_green};  /* swapped spotify green #2abf5e -> primary_green */
                 border-radius: 9px;
@@ -118,34 +124,35 @@ class SaladCord(QWidget, QObject):
                 padding-left: 1px;
             }}
         """)
-        sendB.setFixedWidth(70)
-        sendB.setFixedHeight(32)
-        sendB.clicked.connect(lambda : self.buttonEvent.emit("send"))
-        prompt_layout.addWidget(sendB)
+        self.sendB.setFixedWidth(70)
+        self.sendB.setFixedHeight(32)
+        self.sendB.clicked.connect(lambda : self.buttonEvent.emit("send"))
+        self.prompt_layout.addWidget(self.sendB)
 
         # ------- Chat Layout -------
-        chat_container = QWidget()
-        chat_container.setObjectName("chat_container")
-        chat_container.setStyleSheet(f"""QWidget#chat_container {{
+        self.chat_container = QWidget()
+        self.chat_container.setObjectName("chat_container")
+        self.chat_container.setStyleSheet(f"""QWidget#chat_container {{
                                     background-color: {black};
                                     border: 2px solid {bg_quaternary};
                                     border-radius: 9px;}}""")
-        chat_layout = QVBoxLayout(chat_container)
-        chat_layout.setContentsMargins(10, 10, 10, 10)
-        chat_layout.addWidget(self.scroll_area)   # add scroll area, not container
-        chat_layout.addWidget(prompt_container)
+        self.chat_layout = QVBoxLayout(self.chat_container)
+        self.chat_layout.setContentsMargins(10, 10, 10, 10)
+        self.chat_layout.addWidget(self.scroll_area)   # add scroll area, not container
+        self.chat_layout.addWidget(self.prompt_container)
 
         # -------- side bar --------
-        side_bar_container = QWidget()
-        side_bar_container.setStyleSheet(f"""QWidget {{
+        self.side_bar_container = QWidget()
+        self.side_bar_container.setStyleSheet(f"""QWidget {{
                                                 background-color: {bg_tertiary};
                                                 border-radius: 9px;}}""")
-        side_bar_layout = QVBoxLayout(side_bar_container)
-        side_bar_layout.setContentsMargins(5, 5, 5, 5)
-        side_bar_layout.setSpacing(5)
+        self.side_bar_layout = QVBoxLayout(self.side_bar_container)
+        self.side_bar_layout.setContentsMargins(5, 5, 5, 5)
+        self.side_bar_layout.setSpacing(1)
 
-        hostB = QPushButton("Host")
-        hostB.setStyleSheet(f"""
+        # -------- Host button --------
+        self.hostB = QPushButton("Host")
+        self.hostB.setStyleSheet(f"""
                     QPushButton {{
                         background-color: {primary_green};
                         border-radius: 9px;
@@ -161,13 +168,36 @@ class SaladCord(QWidget, QObject):
                         padding-left: 2px;
                     }}
                 """)
-        hostB.setFixedHeight(32)
-        hostB.setFixedWidth(32)
-        hostB.clicked.connect(lambda : self.buttonEvent.emit("send"))
-        side_bar_layout.addWidget(hostB, alignment=Qt.AlignmentFlag.AlignTop)
+        self.hostB.setFixedHeight(32)
+        self.hostB.setFixedWidth(32)
+        self.hostB.clicked.connect(lambda : self.buttonEvent.emit("host"))
+        self.side_bar_layout.addWidget(self.hostB, alignment=Qt.AlignmentFlag.AlignTop)
 
-        main_layout.addWidget(side_bar_container)
-        main_layout.addWidget(chat_container)
+        # -------- Host button --------
+        self.connB = QPushButton("conn")
+        self.connB.setStyleSheet(f"""
+                            QPushButton {{
+                                background-color: {primary_green};
+                                border-radius: 9px;
+                                font-size: 12px;
+                                font-weight: bold;
+                            }}
+                            QPushButton:hover {{
+                                background-color: {primary_green_hover};
+                            }}
+                            QPushButton:pressed {{
+                                background-color: {primary_green_dark};
+                                padding-top:  2px;
+                                padding-left: 2px;
+                            }}
+                        """)
+        self.connB.setFixedHeight(32)
+        self.connB.setFixedWidth(32)
+        self.connB.clicked.connect(lambda: self.buttonEvent.emit("connReq"))
+        self.side_bar_layout.addWidget(self.connB, alignment=Qt.AlignmentFlag.AlignTop)
+
+        self.main_layout.addWidget(self.side_bar_container)
+        self.main_layout.addWidget(self.chat_container)
 
     def three_dots(self):
         menu = QMenu()
@@ -255,6 +285,101 @@ class SaladCord(QWidget, QObject):
         self.chat_feed_layout.addWidget(msg_widget)
         self.prompt.clear()
         self.scroll_area.verticalScrollBar().setValue(self.scroll_area.verticalScrollBar().maximum())
+
+    def regWindow(self):
+        if hasattr(self, 'regWindowContainer') and self.regWindowContainer.isVisible():
+            self.regWindowContainer.show()
+            self.regWindowContainer.raise_()
+        else:
+            # Create the popup widget
+            self.regWindowContainer = QWidget(self)
+            self.regWindowContainer.setStyleSheet(f"""
+                QWidget {{
+                    background-color: {bg_secondary};
+                    border-radius: 9px;
+                }}
+            """)
+            self.regWindowContainer.setWindowFlags(Qt.WindowType.SubWindow)  # float above main layout
+            self.regWindowContainer.resize(200, 100)
+
+            # Create layout inside the widget
+            layout = QVBoxLayout(self.regWindowContainer)
+            layout.setContentsMargins(5, 5, 5, 5)
+
+            # Center inside the main window
+            parent_width = self.width()
+            parent_height = self.height()
+            px = (parent_width - 200) // 2
+            py = (parent_height - 100) // 2
+            self.regWindowContainer.move(px, py)
+
+            self.regWindowContainer.show()
+            self.regWindowContainer.raise_()
+
+            # --------- label -----------
+            label = QLabel("Enter Code",alignment=Qt.AlignmentFlag.AlignCenter)
+            label.setStyleSheet(f"color: {primary_green_dark};")
+            font = QFont()
+            font.setFamily("Arial")
+            font.setPointSize(20)
+            font.setBold(True)
+            label.setFont(font)
+
+            label.show()
+            layout.addWidget(label)
+            # --------- Code prompt ----------
+            self.codePrompt = QTextEdit()
+            self.codePrompt.setStyleSheet(f"""
+                        QTextEdit {{
+                            border: 2px solid {bg_quaternary};
+                            border-radius: 9px;
+                            background-color: #262626;
+                            font-size: 12px;
+                            color: {interactive_active};
+                        }}
+                        QTextEdit:hover {{
+                            background-color: #272727;
+                        }}
+                        QTextEdit:focus {{
+                            border-color: {primary_green};
+                        }}
+                        QTextEdit::placeholder {{
+                            color: {light_grey};
+                            font-weight: bold;
+                        }}
+                    """)
+            self.codePrompt.setFixedHeight(30)
+            self.codePrompt.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.codePrompt.setPlaceholderText("Enter code here")
+            self.codePrompt.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+            self.codePrompt.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
+            layout.addWidget(self.codePrompt)
+            # -------- Host button --------
+            connB = QPushButton("Connect")
+            connB.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {primary_green};
+                    border-radius: 9px;
+                    font-size: 12px;
+                    font-weight: bold;
+                }}
+                QPushButton:hover {{
+                    background-color: {primary_green_hover};
+                }}
+                QPushButton:pressed {{
+                    background-color: {primary_green_dark};
+                    padding-top: 2px;
+                    padding-left: 2px;
+                }}
+            """)
+            connB.setFixedSize(90, 20)  # sets width and height at once
+            connB.clicked.connect(lambda: self.buttonEvent.emit("conn"))
+
+            # set alignment here
+            layout.addWidget(connB, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+
+
+
 
 def ui_start():
     app = QApplication(sys.argv)
