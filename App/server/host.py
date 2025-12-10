@@ -157,7 +157,7 @@ class HostHandler:
                                 "name": msg["name"],
                                 "sock": client_sock
                             }
-                            client_sock.send("Handshake accepted".encode())
+                            client_sock.send({"type":"handshake", "username":self.hostname, "version":self.VERSION, "status": "accept"}.encode())
                             thread = threading.Thread(
                                 target=self.handle_client,
                                 args=(client_sock, client_addr),

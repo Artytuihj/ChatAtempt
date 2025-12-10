@@ -1,4 +1,7 @@
 import json , asyncio , queue , socket, threading
+
+from adodbapi import connect
+
 from App.Net.general.RegServerTransporter import RegServerTransporter as regServer
 from aiortc import  RTCPeerConnection, RTCSessionDescription
 import logging
@@ -38,11 +41,10 @@ class ClientNetHandler:
         def OnConnectionEstablished( channel):
             self.channel = channel
             self.logger.info("[OnConnectionEstablished] early connection established sending handshake")
-            handshake = {"type": "handshake", "name": self.username, "version": self.VERSION}
+            handshake = {"type": "handshake", "name": self.username, "version": self.VERSION, "status":"request"}
             if self.channel:
                 self.channel.send(json.dumps(handshake))
                 self.logger.info("[OnConnectionEstablished] handshake sent waiting for response")
-
 
             @channel.on("message")
             def OnIncomingData(data):
@@ -56,16 +58,52 @@ class ClientNetHandler:
                     try:
 
                         msg = json.loads(data)
+
                     except json.JSONDecodeError:
-                        self.logger.warning(f"[OnIncomingData] Invalid JSON: {data}")
                         msg = {"type": "raw", "cont": data}
+                        self.logger.warning(f"[OnIncomingData] Invalid JSON: {data}")
 
                     if not isinstance(msg, dict):
-                        self.logger.warning(f"[OnIncomingData] Received not-a-dict message, wrapping: {msg}")
                         msg = {"type": "raw", "cont": msg}
-                    self.logger.info(msg)
-                    self.msgQueue.put(msg)
+                        self.logger.warning(f"[OnIncomingData] Received not-a-dict message, wrapping: {msg}")
 
+                    if self.connected:
+                        self.logger.info(msg)
+                        self.msgQueue.put(msg)
+                    else:
+                        if msg["type"] == "handshake":
+                            self.logger.info("[OnIncomingData] handshake received processing")
+                            if msg["version"] == self.VERSION:
+                                self.logger.info("[OnIncomingData] handshake version is matching")
+                                if msg["status"] == "accept":
+                                    self.logger.info("[OnIncomingData] handshake accepted")
+                                    self.connected = True
+                                elif msg["status"] == "declined":
+                                    self.logger.info("[OnIncomingData] handshake declined closing data channel")
+                                    self.closeConnection("handshake declined by server")
+                                    return
+                        elif msg.get("type") == "raw":
+                            content = msg.get("cont")
+                            self.logger.warning(
+                                f"[OnIncomingData] Raw message received, attempting recovery: {content}")
+
+                            try:
+                                recovered = json.loads(content)
+                                if isinstance(recovered, dict) and recovered.get("type") == "handshake":
+                                    self.logger.info("[OnIncomingData] Recovered a handshake from raw message, processing")
+                                    if msg["version"] == self.VERSION:
+                                        self.logger.info("[OnIncomingData] handshake version is matching")
+                                        if msg["status"] == "accept":
+                                            self.logger.info("[OnIncomingData] handshake accepted")
+                                            self.connected = True
+                                        elif msg["status"] == "declined":
+                                            self.logger.info("[OnIncomingData] handshake declined closing data channel")
+                                            self.closeConnection("handshake declined by server")
+                            except Exception:
+                                self.logger.warning(
+                                    "[OnIncomingData] Could not recover anything from raw message, skipping")
+                        else:
+                            self.logger.warning(f"[OnIncomingData] raw unknown package received: {msg}")
                 except Exception as e:
                     self.logger.error(f"[OnIncomingData] Error receiving message: {e}")
                     return
@@ -94,3 +132,8 @@ class ClientNetHandler:
         self.hosting = True
         code = host.setup_host(hostname)
         self.Connect(code)
+
+    def closeConnection(self, reason):
+        self.logger.warning(reason)
+        self.channel.close()
+        self.connected = False
