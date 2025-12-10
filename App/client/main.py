@@ -13,7 +13,7 @@ from App.Net.general.RegServerTransporter import  RegServerTransporter as RegSer
 class MainApp:
     def __init__(self):
         # ---- Basic Config ----
-        self.VERSION = "1.0.0"
+        self.VERSION = "1.0.1"
         # ---- UI ----
         self.app, self.window = UI.ui_start()
         self.window.buttonEvent.connect(self.process_button)
