@@ -1,5 +1,4 @@
 import sys
-from idlelib.configdialog import font_sample_text
 
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
@@ -151,30 +150,8 @@ class SaladCord(QWidget, QObject):
             self.side_bar_layout.setContentsMargins(5, 5, 5, 5)
             self.side_bar_layout.setSpacing(1)
 
-            # -------- Host button --------
-            self.hostB = QPushButton("Host")
-            self.hostB.setStyleSheet(f"""
-                        QPushButton {{
-                            background-color: {primary_green};
-                            border-radius: 9px;
-                            font-size: 12px;
-                            font-weight: bold;
-                        }}
-                        QPushButton:hover {{
-                            background-color: {primary_green_hover};
-                        }}
-                        QPushButton:pressed {{
-                            background-color: {primary_green_dark};
-                            padding-top:  2px;
-                            padding-left: 2px;
-                        }}
-                    """)
-            self.hostB.setFixedHeight(32)
-            self.hostB.setFixedWidth(32)
-            self.hostB.clicked.connect(lambda : self.buttonEvent.emit("host","Server"))
-            self.side_bar_layout.addWidget(self.hostB, alignment=Qt.AlignmentFlag.AlignTop)
 
-            # -------- Host button --------
+            # -------- connect button --------
             self.connB = QPushButton("conn")
             self.connB.setStyleSheet(f"""
                                 QPushButton {{

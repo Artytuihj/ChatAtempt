@@ -1,8 +1,8 @@
-import json , asyncio , queue , socket, threading
+import json, queue, threading
 
-from adodbapi import connect
+from pygame.examples.video import answer
 
-from App.Net.general.RegServerTransporter import RegServerTransporter as regServer
+from App.client.Net.RegServerTransporter import RegServerTransporter as regServer
 from aiortc import  RTCPeerConnection, RTCSessionDescription
 import logging
 
@@ -13,7 +13,6 @@ class ClientNetHandler:
         self.connected = False
         self.pc = RTCPeerConnection()
         self.channel = None
-        self.hosting = False
         self.msgQueue = queue.Queue()
         self.handlerMap = handlerMap
         self.username = username
@@ -21,21 +20,21 @@ class ClientNetHandler:
         self.logger = logging.getLogger("[ClientNetHandler]")
         self.logger.setLevel(logging.DEBUG)
         self.regServer = regServer()
+        self.dispatchThread = None
 
     async def Connect(self, code):
         pc = self.pc
-        if not code:
-            self.logger.error("[connect] no code provided (yo how tf did this function even run?!)")
-            return
 
+        offer = await pc.createOffer()
+        await pc.setLocalDescription(offer)
 
-        result = self.regServer.getOffer(code)
-        if result:
-            self.logger.warning(f"[Connect] Server did not return an offer for code {code}")
+        response = self.regServer.register(code,pc.localDescription.sdp, pc.localDescription.type)
+        if not response:
+            raise RuntimeError("No answer from signaling server")
 
-        offerSdp, offerType = result
-        offer = RTCSessionDescription(sdp=offerSdp, type=offerType)
-        await self.pc.setRemoteDescription(offer)
+        serverAnswer = RTCSessionDescription(sdp=response["answer_sdp"], type=response["answer_type"])
+        await pc.setRemoteDescription(serverAnswer)
+
 
         @pc.on("datachannel")
         def OnConnectionEstablished( channel):
@@ -44,6 +43,7 @@ class ClientNetHandler:
             handshake = {"type": "handshake", "name": self.username, "version": self.VERSION, "status":"request"}
             if self.channel:
                 self.channel.send(json.dumps(handshake))
+                self.dispatchThread = threading.Thread(target=self.Dispatch(), daemon=True).start()
                 self.logger.info("[OnConnectionEstablished] handshake sent waiting for response")
 
             @channel.on("message")
@@ -129,11 +129,11 @@ class ClientNetHandler:
                 continue
 
     def setup_host(self, hostname, host):
-        self.hosting = True
         code = host.setup_host(hostname)
         self.Connect(code)
 
     def closeConnection(self, reason):
         self.logger.warning(reason)
         self.channel.close()
+        self.dispatchThread.stop()
         self.connected = False

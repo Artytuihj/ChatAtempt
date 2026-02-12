@@ -1,12 +1,11 @@
 # ==== Imports ====
 import json
+import inspect
+import asyncio
 
 # Internal imports
 from App.client import UI
-from App.server.host import HostHandler
-from App.Net.client.ClientNetHandler import ClientNetHandler as clientNet
-from App.Net.general.RegServerTransporter import  RegServerTransporter as RegServer
-
+from App.client.Net.ClientNetHandler import ClientNetHandler as clientNet
 
 
 # ==== Main Application ====
@@ -18,8 +17,6 @@ class MainApp:
         self.app, self.window = UI.ui_start()
         self.window.buttonEvent.connect(self.process_button)
 
-        # ---- Hosting ----
-        self.host = HostHandler(self.VERSION)
 
         # ---- Networking ----
         self.username = "Vladik"
@@ -32,9 +29,8 @@ class MainApp:
         # ---- Button actions ----
         self.button_actions = {
             "send": self.send_message,
-            "host": self.setup_host,
             "connReq": self.connectRequest,
-            "conn": self.net.connect,
+            "conn": self.net.Connect,
         }
 
     # =========================
@@ -43,13 +39,6 @@ class MainApp:
     def connectRequest(self, Value):
         if not self.net.connected:
                 self.window.regWindowEvent.emit()
-
-    # =========================
-    # ---- Networking: Hosting ----
-    # =========================
-    def setup_host(self, value="Server"):
-        hostname = value if value else "Server"
-        self.net.setup_host(hostname, self.host)
 
     # =========================
     # ---- UI Actions ----
@@ -74,11 +63,14 @@ class MainApp:
         try:
             action = self.button_actions.get(action_id)
             if action:
+                if inspect.iscoroutinefunction(action):
+                    asyncio.run(action(value))
                 action(value)
             else:
                 print("No action is bound to this id or id doesn't exist")
         except Exception as e:
             print(e)
+
     def accseptMsg(self, *args):
         msg = args[0]
         self.window.msgEvent.emit(self.username, msg, 3, False)
